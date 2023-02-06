@@ -71,6 +71,7 @@ conway {
         ; x and y
         ubyte x
         ubyte y
+        ; First calculate the next generation
         ; Cycle each row
         for y in 0 to maxy {
             ; Cycle each column
@@ -94,6 +95,8 @@ conway {
                 bytes++
             }
         }
+        
+        ; Now draw the next generation
         
         bytes = 0
 
@@ -135,6 +138,9 @@ conway {
             ; upper
             if txt.getchr(x, y - 1) == $51 {
                 count++
+            }
+            if count > 3 {
+                return count
             }
             ; upper right
             if txt.getchr(x + 1, y - 1) == $51 {
