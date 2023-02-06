@@ -47,8 +47,14 @@ conway {
             for x in 0 to maxx {
                 ; Set a random character (dead or alive)
                 if math.rnd() % 3 == 0 {
+                    ubyte color = math.rnd() % 16
+
+                    ; Avoid black
+                    if color == 0 {
+                        color = 1
+                    }
                     txt.setchr(x, y, $51)
-                    txt.setclr(x, y, math.rnd() % 16)
+                    txt.setclr(x, y, color)
                     @(bytes+$1000) = 1
                 } else {
                     txt.setchr(x, y, $20)
@@ -93,7 +99,12 @@ conway {
 
         for y in 0 to maxy {
             for x in 0 to maxx {
-                txt.setclr(x, y, math.rnd() % 16)
+                ubyte color = math.rnd() % 16
+                ; Avoid black
+                if color == 0 {
+                    color = 1
+                }
+                txt.setclr(x, y, color)
                 if @(bytes+$1000) == 1 {
                     txt.setchr(x, y, $51)
                 } else {
