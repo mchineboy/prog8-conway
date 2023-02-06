@@ -16,11 +16,11 @@ main {
 
 conway {
     
-    ubyte    maxx = txt.width()
-    ubyte    maxy = txt.height()
+    ubyte maxx = txt.width()
+    ubyte maxy = txt.height()
     ubyte x
     ubyte y
-    
+
     sub initialize() {
         for y in 0 to maxy {
             for x in 0 to maxx {
@@ -76,10 +76,18 @@ conway {
                 count += 1
             }
         }
-        ; left
+        ; Early exit
+        if count > 3 {
+            return count
+        }
         if x > 0 {
+        ; left
             if txt.getchr(x - 1, y) == $51 {
                 count += 1
+            }
+            ; Early exit
+            if count > 3 {
+                return count
             }
             if ( y < maxy ) {
                 ; lower left
@@ -104,6 +112,10 @@ conway {
             ; lower
             if txt.getchr(x, y + 1) == $51 {
                 count += 1
+            }
+            ; Early exit
+            if count > 3 {
+                return count
             }
             if x < maxx {
                 ; lower right
