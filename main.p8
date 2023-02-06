@@ -97,7 +97,7 @@ conway {
         }
         
         ; Now draw the next generation
-        
+
         bytes = 0
 
         for y in 0 to maxy {
@@ -107,7 +107,6 @@ conway {
                 if color == 0 {
                     color = 1
                 }
-                txt.setclr(x, y, color)
                 if @(bytes+$1000) == 1 {
                     txt.setchr(x, y, $51)
                 } else {
