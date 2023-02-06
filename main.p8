@@ -1,5 +1,6 @@
 %import math
 %import textio
+%import syslib
 
 ; Conway's game of life in 6502
 ; http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
@@ -15,6 +16,7 @@ main {
 
     sub start() {
         txt.clear_screen()
+        sys.memset($1000, $20, txt.width() * txt.height())
         ; Draw a random pattern
         conway.initialize()
         ; Run the game
@@ -32,62 +34,82 @@ conway {
     ubyte maxx = txt.width()
     ubyte maxy = txt.height()
 
-    ; Global x and y
-    ubyte x
-    ubyte y
 
     sub initialize() {
         ; Random pattern
         ; Cycle each row
+        ; x and y
+        ubyte x
+        ubyte y
+        uword bytes = 0
         for y in 0 to maxy {
             ; Cycle each column
             for x in 0 to maxx {
-                ; Set a random color
-                txt.color(math.rnd() / 16)
                 ; Set a random character (dead or alive)
-                if math.rnd() % 5 == 0 {
+                if math.rnd() % 3 == 0 {
                     txt.setchr(x, y, $51)
                     txt.setclr(x, y, math.rnd() % 16)
+                    @(bytes+$1000) = 1
                 } else {
                     txt.setchr(x, y, $20)
+                    @(bytes+$1000) = 0
                 }
+                bytes++
             }
         }
         
     }
 
     sub next_generation() {
+        uword bytes = 0
+        ; x and y
+        ubyte x
+        ubyte y
         ; Cycle each row
         for y in 0 to maxy {
             ; Cycle each column
             for x in 0 to maxx {
                 if txt.getchr(x, y) == $51 {
-                ; Any live cell with fewer than two live neighbours dies, 
-                ; as if caused by under-population.
+                    ; Any live cell with fewer than two live neighbours dies, 
+                    ; as if caused by under-population.
                     if conway.count_neighbours(x, y) < 2 {
-                        txt.setchr(x, y, $20)
+                        @(bytes+$1000) = 0
                     } 
-                    ; Any live cell with two or three live neighbours survives.
+                    ; Any live cell three live neighbours survives.
                     else if conway.count_neighbours(x, y) > 3 {
-                        txt.setchr(x, y, $20)
+                        @(bytes+$1000) = 0
                     }
                 } else {
                     ; Any dead cell with three live neighbours becomes a live cell.
                     if conway.count_neighbours(x, y) == 3 {
-                        txt.setchr(x, y, $51)
-                        txt.setclr(x, y, math.rnd() % 16)
+                        @(bytes+$1000) = 1
                     }
                 }
+                bytes++
+            }
+        }
+        
+        bytes = 0
+
+        for y in 0 to maxy {
+            for x in 0 to maxx {
+                txt.setclr(x, y, math.rnd() % 16)
+                if @(bytes+$1000) == 1 {
+                    txt.setchr(x, y, $51)
+                } else {
+                    txt.setchr(x, y, $20)
+                }
+                bytes++
             }
         }
     }
     
     ; Count the number of neighbours
     ; Returns the number of neighbours
-    sub count_neighbours(ubyte x, ubyte y) -> ubyte {
-        ubyte count = 0
+    sub count_neighbours(ubyte x, ubyte y) -> uword {
+        uword count = 0
         ; upper left
-        if x >= 0  {
+        if x > 0  {
             if y > 0 {
                 if txt.getchr(x - 1, y - 1) == $51 {
                     count++
