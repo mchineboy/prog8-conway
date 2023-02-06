@@ -87,9 +87,11 @@ conway {
     sub count_neighbours(ubyte x, ubyte y) -> ubyte {
         ubyte count = 0
         ; upper left
-        if x >= 0 and y >= 0 {
-            if txt.getchr(x - 1, y - 1) == $51 {
-                count++
+        if x >= 0  {
+            if y > 0 {
+                if txt.getchr(x - 1, y - 1) == $51 {
+                    count++
+                }
             }
         }
         if y > 0 {
