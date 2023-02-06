@@ -121,6 +121,10 @@ conway {
         uword count = 0
         ; upper left
         if x > 0  {
+            ; left
+            if txt.getchr(x - 1, y) == $51 {
+                count++
+            }
             if y > 0 {
                 if txt.getchr(x - 1, y - 1) == $51 {
                     count++
@@ -142,14 +146,6 @@ conway {
             return count
         }
         if x > 0 {
-        ; left
-            if txt.getchr(x - 1, y) == $51 {
-                count++
-            }
-            ; Early exit
-            if count > 3 {
-                return count
-            }
             if ( y < maxy ) {
                 ; lower left
                 if txt.getchr(x - 1, y + 1) == $51 {
