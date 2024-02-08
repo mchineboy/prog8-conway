@@ -1,6 +1,7 @@
 %import math
 %import textio
 %import syslib
+%import string
 
 ; Conway's game of life in 6502
 ; http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
@@ -17,14 +18,23 @@ main {
     sub start() {
         repeat {
             txt.clear_screen()
-            sys.memset($1000, $20, txt.width() * txt.height())
+            sys.memset($c000, $20, txt.width() * txt.height())
             ; Draw a random pattern
             conway.initialize()
             ; Run the game
+            ubyte generations = 0
             repeat {
                 ubyte generation_changes = 0
                 generation_changes = conway.next_generation()
-                if generation_changes <= 10 {
+                generations++
+                if generation_changes <= 16 {
+                    ; Print the number of generations to the center of the screen
+                    txt.row = txt.height() / 2
+                    str generationstr = "Generations: " + generations
+                    txt.col = (txt.width() - length(generationstr)) / 2
+                    txt.print(generationstr)
+                    ; Wait for a key
+
                     break
                 }
             }
@@ -60,10 +70,10 @@ conway {
                 ; Set a random character (dead or alive)
                 if math.rnd() % 3 == 0 {
                     txt.setchr(x, y, $51)
-                    @(bytes+$1000) = 1
+                    @(bytes+$c000) = 1
                 } else {
                     txt.setchr(x, y, $20)
-                    @(bytes+$1000) = 0
+                    @(bytes+$c000) = 0
                 }
                 bytes++
             }
@@ -86,18 +96,18 @@ conway {
                     ; Any live cell with fewer than two live neighbours dies, 
                     ; as if caused by under-population.
                     if conway.count_neighbours(x, y) < 2 {
-                        @(bytes+$1000) = 0
+                        @(bytes+$c000) = $20
                         generation_changes++
                     } 
                     ; Any live cell three live neighbours survives.
                     else if conway.count_neighbours(x, y) > 3 {
-                        @(bytes+$1000) = 0
+                        @(bytes+$c000) = $20
                         generation_changes++
                     }
                 } else {
                     ; Any dead cell with three live neighbours becomes a live cell.
                     if conway.count_neighbours(x, y) == 3 {
-                        @(bytes+$1000) = 1
+                        @(bytes+$c000) = $51
                         generation_changes++
                     }
                 }
@@ -107,16 +117,18 @@ conway {
         
         ; Now draw the next generation
 
-        bytes = 0
-
-        for y in 0 to maxy {
-            for x in 0 to maxx {
-                if @(bytes+$1000) == 1 {
-                    txt.setchr(x, y, $51)
-                } else {
-                    txt.setchr(x, y, $20)
+        if sys.target == 64 {
+            sys.memcopy($c000, $0400, bytes)
+        } else {
+            for y in 0 to maxy {
+                for x in 0 to maxx {
+                    if @(bytes+$c000) == 1 {
+                        txt.setchr(x, y, $51)
+                    } else {
+                        txt.setchr(x, y, $20)
+                    }
+                    bytes++
                 }
-                bytes++
             }
         }
 
