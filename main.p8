@@ -24,7 +24,7 @@ main {
             repeat {
                 ubyte generation_changes = 0
                 generation_changes = conway.next_generation()
-                if generation_changes <= 6 {
+                if generation_changes <= 10 {
                     break
                 }
             }
