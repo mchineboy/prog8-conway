@@ -15,13 +15,19 @@
 main {
 
     sub start() {
-        txt.clear_screen()
-        sys.memset($1000, $20, txt.width() * txt.height())
-        ; Draw a random pattern
-        conway.initialize()
-        ; Run the game
         repeat {
-            conway.next_generation()
+            txt.clear_screen()
+            sys.memset($1000, $20, txt.width() * txt.height())
+            ; Draw a random pattern
+            conway.initialize()
+            ; Run the game
+            repeat {
+                ubyte generation_changes = 0
+                generation_changes = conway.next_generation()
+                if generation_changes <= 6 {
+                    break
+                }
+            }
         }
     }
 }
@@ -65,7 +71,8 @@ conway {
         
     }
 
-    sub next_generation() {
+    sub next_generation() -> ubyte {
+        ubyte generation_changes = 0
         uword bytes = 0
         ; x and y
         ubyte x
@@ -80,15 +87,18 @@ conway {
                     ; as if caused by under-population.
                     if conway.count_neighbours(x, y) < 2 {
                         @(bytes+$1000) = 0
+                        generation_changes++
                     } 
                     ; Any live cell three live neighbours survives.
                     else if conway.count_neighbours(x, y) > 3 {
                         @(bytes+$1000) = 0
+                        generation_changes++
                     }
                 } else {
                     ; Any dead cell with three live neighbours becomes a live cell.
                     if conway.count_neighbours(x, y) == 3 {
                         @(bytes+$1000) = 1
+                        generation_changes++
                     }
                 }
                 bytes++
@@ -109,6 +119,8 @@ conway {
                 bytes++
             }
         }
+
+        return generation_changes
     }
     
     ; Count the number of neighbours
