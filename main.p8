@@ -17,8 +17,9 @@ main {
     sub start() {
         repeat {
             txt.clear_screen()
-            uword screensize = txt.width() as uword * txt.height()
-            sys.memset($1000, screensize, $20)
+            sys.memset($1000,
+                       txt.width() as uword * txt.height(), 
+                       $20)
             ; Draw a random pattern
             conway.initialize()
             ; Run the game
