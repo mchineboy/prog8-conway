@@ -112,6 +112,15 @@ conway {
 
         bytes = 0
 
+        ; This method is broken:
+        ; for y in 0 to maxy {
+        ;     for x in 0 to maxx {
+        ;         txt.setchr(x, y, @(bytes+$1000))
+        ;         bytes++
+        ;     }
+        ; }
+
+        ; This method works
         for y in 0 to maxy {
             for x in 0 to maxx {
                 if @(bytes+$1000) == $51 {
