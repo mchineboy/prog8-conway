@@ -17,7 +17,7 @@ main {
     sub start() {
         repeat {
             txt.clear_screen()
-            sys.memset($1000, $20, txt.width() * txt.height())
+            sys.memset($1000, txt.width() * txt.height(), $20)
             ; Draw a random pattern
             conway.initialize()
             ; Run the game
