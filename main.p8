@@ -41,7 +41,8 @@ conway {
     ; Get max x and y
     ubyte maxx = txt.width()
     ubyte maxy = txt.height()
-
+    uword memoffset = (maxx * maxy)+512
+    uword lowmemory = memoffset + $1000
 
     sub initialize() {
         ; Random pattern
@@ -82,10 +83,14 @@ conway {
         uword neighbours
         ; First calculate the next generation
         ; Cycle each row
+
+        sys.memcopy($1000, lowmemory, maxx * maxy)
+
         for y in 0 to maxy {
             ; Cycle each column
             for x in 0 to maxx {
-                if txt.getchr(x, y) == $51 {
+                ubyte chr = @(bytes+lowmemory)
+                if chr == $51 {
                     ; Any live cell with fewer than two live neighbours dies, 
                     ; as if caused by under-population.
                     neighbours = conway.count_neighbours(x, y)
@@ -116,7 +121,7 @@ conway {
 
         for y in 0 to maxy {
             for x in 0 to maxx {
-                ubyte chr = @(bytes+$1000)
+                chr = @(bytes+$1000)
                 txt.setchr(x, y, chr)
                 bytes++
             }
@@ -128,69 +133,33 @@ conway {
     ; Count the number of neighbours
     ; Returns the number of neighbours
     sub count_neighbours(ubyte x, ubyte y) -> uword {
+        uword highmemory = lowmemory + maxx * maxy
         uword count = 0
-        ; upper left
-        if x > 0  {
-            ; left
-            if txt.getchr(x - 1, y) == $51 {
-                count++
+        ubyte chr = $20
+
+        uword address = y * maxx + x + lowmemory
+
+        ubyte offset
+        uword neighbour
+
+        for offset in 0 to 7 {
+            when offset {
+                0 -> neighbour = address - maxx - 1
+                1 -> neighbour = address - maxx
+                2 -> neighbour = address - maxx + 1
+                3 -> neighbour = address - 1
+                4 -> neighbour = address + 1
+                5 -> neighbour = address + maxx - 1
+                6 -> neighbour = address + maxx
+                7 -> neighbour = address + maxx + 1
             }
-            if y > 0 {
-                if txt.getchr(x - 1, y - 1) == $51 {
+            if neighbour >= lowmemory and neighbour < highmemory {
+                chr = @(neighbour)
+                if chr == $51 {
                     count++
                 }
-            }
-        }
-        if y > 0 {
-            ; upper
-            if txt.getchr(x, y - 1) == $51 {
-                count++
-            }
-            if count > 3 {
-                return count
-            }
-            ; upper right
-            if txt.getchr(x + 1, y - 1) == $51 {
-                count++
-            }
-        }
-        ; Early exit
-        if count > 3 {
-            return count
-        }
-        if x > 0 {
-            if ( y < maxy ) {
-                ; lower left
-                if txt.getchr(x - 1, y + 1) == $51 {
-                    count++
-                }
-            }
-            if count > 3 {
-                return count
-            }
-        }
-        if x < maxx {
-            ; right
-            if txt.getchr(x + 1, y) == $51 {
-                count++
-            }
-            if count > 3 {
-                return count
-            }
-        }
-        if y < maxy {
-            ; lower
-            if txt.getchr(x, y + 1) == $51 {
-                count++
-            }
-            ; Early exit
-            if count > 3 {
-                return count
-            }
-            if x < maxx {
-                ; lower right
-                if txt.getchr(x + 1, y + 1) == $51 {
-                    count++
+                if count > 4 {
+                    break
                 }
             }
         }
