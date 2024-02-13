@@ -13,20 +13,16 @@
 ; 2023-02-05: Initial version
 
 main {
-
     sub start() {
         repeat {
-            txt.clear_screen()
-            sys.memset($1000,
-                       txt.width() as uword * txt.height(), 
-                       $20)
             ; Draw a random pattern
             conway.initialize()
+
             ; Run the game
             repeat {
-                ubyte generation_changes = 0
-                generation_changes = conway.next_generation()
-                if generation_changes <= 8 {
+                ubyte dots_left = 0
+                dots_left = conway.next_generation()
+                if dots_left <= 12 {
                     break
                 }
             }
@@ -39,131 +35,206 @@ conway {
     ; $51 = O (alive)
 
     ; Get max x and y
-    ubyte maxx = txt.width()
-    ubyte maxy = txt.height()
-    uword memoffset = (maxx * maxy)+512
-    uword lowmemory = memoffset + $1000
+    uword maxx = txt.width() as uword
+    uword maxy = txt.height() as uword
+    uword memoffset = (maxx * maxy) + 1
+    uword basememory = sys.progend()
+    uword calcmemory = memoffset + basememory
 
     sub initialize() {
         ; Random pattern
         ; Cycle each row
         ; x and y
-        ubyte x
-        ubyte y
-        uword bytes = 0
-        for y in 0 to maxy {
+        txt.print_uw(basememory)
+        sys.wait(120)
+        txt.clear_screen()
+        sys.memset(basememory,
+                    memoffset as uword, 
+                    $20)
+        sys.memset(calcmemory,
+                    memoffset as uword,
+                    $20)
+        uword x = 0
+        uword y = 0
+        repeat maxy as ubyte {
             ; Cycle each column
-            for x in 0 to maxx {
+            repeat maxx as ubyte  {
                 ubyte color = math.rnd() / 16
                 ; Avoid black
                 if color == 0 {
                     color = 1
                 }
-                txt.setclr(x, y, color)
+                txt.setclr(x as ubyte, y as ubyte, color)
                 ; Set a random character (dead or alive)
+                
+                uword address = y * maxx + x + basememory
+
                 if math.rnd() % 3 == 0 {
-                    txt.setchr(x, y, $51)
-                    @(bytes+$1000) = $51
+                    txt.setchr(x as ubyte, y as ubyte, $51)
+                    @(address) = $51
                 } else {
-                    txt.setchr(x, y, $20)
-                    @(bytes+$1000) = $20
+                    txt.setchr(x as ubyte, y as ubyte, $20)
+                    @(address) = $20
                 }
-                bytes++
+                x++
             }
+            x = 0
+            y++
         }
         
     }
 
     sub next_generation() -> ubyte {
-        ubyte generation_changes = 0
+        ubyte dots_left = 0
         uword bytes = 0
         ; x and y
-        ubyte x
-        ubyte y
-        uword neighbours
+        uword x = 0
+        uword y = 0
         ; First calculate the next generation
         ; Cycle each row
 
-        sys.memcopy($1000, lowmemory, maxx * maxy)
+        sys.memcopy(basememory, calcmemory, memoffset)
 
-        for y in 0 to maxy {
+        repeat maxy as ubyte {
             ; Cycle each column
-            for x in 0 to maxx {
-                ubyte chr = @(bytes+lowmemory)
+            repeat maxx as ubyte {
+                uword calcaddress = y * maxx + x + memoffset
+                ubyte chr = @(calcaddress)
+                uword address = y * maxx + x + basememory
+                ubyte neighbours = 0
+
                 if chr == $51 {
                     ; Any live cell with fewer than two live neighbours dies, 
                     ; as if caused by under-population.
-                    neighbours = conway.count_neighbours(x, y)
+                    neighbours = conway.count_neighbours(calcaddress)
+                    
                     if neighbours < 2 {
-                        @(bytes+$1000) = $20
-                        generation_changes++
-                    } 
+                        @($d020) = $0
+                        @(address) = $20
+                    }
                     ; Any live cell three live neighbours survives.
                     else if neighbours > 3 {
-                        @(bytes+$1000) = $20
-                        generation_changes++
+                        @($d020) = $0
+                        @(address) = $20
                     }
                 } else {
                     ; Any dead cell with three live neighbours becomes a live cell.
-                    neighbours = conway.count_neighbours(x, y)
+                    neighbours = conway.count_neighbours(calcaddress)
                     if neighbours == 3 {
-                        @(bytes+$1000) = $51
-                        generation_changes++
+                        @($d020) = $1
+                        @(address) = $51
                     }
                 }
-                bytes++
+                x++
             }
+            x = 0
+            y++
         }
+
+        x = 0
+        y = 0
         
         ; Now draw the next generation
 
-        bytes = 0
-
-        for y in 0 to maxy {
-            for x in 0 to maxx {
-                chr = @(bytes+$1000)
-                txt.setchr(x, y, chr)
-                bytes++
+        repeat maxy as ubyte {
+            repeat maxx as ubyte {
+                address = y * maxx + x + basememory
+                chr = @(address)
+                txt.setchr(x as ubyte, y as ubyte, chr)
+                if chr == $51 {
+                    dots_left++
+                }
+                x++
             }
+            x = 0
+            y++
         }
 
-        return generation_changes
+        return dots_left
     }
     
     ; Count the number of neighbours
     ; Returns the number of neighbours
-    sub count_neighbours(ubyte x, ubyte y) -> uword {
-        uword highmemory = lowmemory + maxx * maxy
-        uword count = 0
+    sub count_neighbours(uword address) -> ubyte {
+        ubyte count = 0
         ubyte chr = $20
 
-        uword address = y * maxx + x + lowmemory
-
-        ubyte offset
-        uword neighbour
-
-        for offset in 0 to 7 {
-            when offset {
-                0 -> neighbour = address - maxx - 1
-                1 -> neighbour = address - maxx
-                2 -> neighbour = address - maxx + 1
-                3 -> neighbour = address - 1
-                4 -> neighbour = address + 1
-                5 -> neighbour = address + maxx - 1
-                6 -> neighbour = address + maxx
-                7 -> neighbour = address + maxx + 1
-            }
-            if neighbour >= lowmemory and neighbour < highmemory {
-                chr = @(neighbour)
-                if chr == $51 {
-                    count++
-                }
-                if count > 4 {
-                    break
-                }
-            }
+        uword neighbour = address - maxx - 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
         }
-
+        neighbour = address - maxx
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address - maxx + 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address - 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address + 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address + maxx - 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address + maxx
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        neighbour = address + maxx + 1
+        conway.print_address(neighbour,count)
+        chr = conway.get_cell(neighbour)
+        if chr == $51 {
+            count = count + 1
+        }
+        txt.row(20)
+        txt.column(0)
+        txt.print("count: ")
+        txt.print_ub(count)
         return count
+    }
+
+    sub get_cell(uword address) -> ubyte {
+        if address >= calcmemory and address < calcmemory + maxx * maxy {
+            return @(address)
+        } else {
+            return $20
+        }
+    }
+
+    sub print_address(uword address, ubyte count) {
+        uword x = address % maxx
+        uword y = address / maxx
+        txt.row(0)
+        txt.column(0)
+        txt.print("x: ")
+        txt.print_uw(x)
+        txt.print(" y: ")
+        txt.print_uw(y)
+        txt.print(" memory location: ")
+        txt.print_uw(address)
+        txt.print(" count: ")
+        txt.print_ub(count)
+        sys.wait(30)
     }
 }
