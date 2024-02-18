@@ -90,6 +90,7 @@ conway {
         ; x and y
         uword x = 0
         uword y = 0
+        uword address = 0
         ; First calculate the next generation
         ; Cycle each row
 
@@ -100,22 +101,24 @@ conway {
             repeat maxx as ubyte {
                 uword calcaddress = conway.calculate_address(calcmemory, x, y)
                 ubyte chr = @(calcaddress)
-                uword address = conway.calculate_address(basememory, x, y)
                 ubyte neighbours = conway.count_neighbours(calcaddress)
 
                 if chr == $51 {
                     ; Any live cell with fewer than two live neighbours dies, 
                     ; as if caused by under-population.
                     if neighbours < 2 {
+                        address = conway.calculate_address(basememory, x, y)
                         @(address) = $20
                     }
                     ; Any live cell three live neighbours survives.
                     else if neighbours > 3 {
+                        address = conway.calculate_address(basememory, x, y)
                         @(address) = $20
                     }
                 } else {
                     ; Any dead cell with three live neighbours becomes a live cell.
                     if neighbours == 3 {
+                        address = conway.calculate_address(basememory, x, y)
                         @(address) = $51
                     }
                 }
